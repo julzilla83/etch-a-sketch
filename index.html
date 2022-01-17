@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Etch-A-Sketch</title>
+</head>
+<body>
+    <script>
+        //exercise: write everything in the HTML DOM using JS only
+
+        document.body.style.backgroundColor = 'black';
+        document.body.style.color = '#f4f4f4';
+
+        //centering div
+        const ui_width = 800;
+        const layout_div = document.createElement('div');
+        layout_div.style.width = ui_width + 'px';
+        layout_div.style.margin = 'auto';
+        layout_div.align = 'center';
+        document.body.appendChild(layout_div);
+
+        //page title
+        const title = document.createElement('h1')
+        title.innerText = "90's Sketch Pad"
+        title.style.fontFamily = "Impact, Helvetica, Tahoma, Verdana";
+        title.style.letterSpacing =  '10px';
+        title.style.fontWeight = '700';
+        title.style.textTransform = 'uppercase';
+        layout_div.appendChild(title);
+
+        //header div
+        const header_div = document.createElement('div')
+        header_div.style.display = 'flex';
+        header_div.style.justifyContent = 'space-between';
+        header_div.style.alignItems = 'center';
+        layout_div.appendChild(header_div);
+
+        //create a clear button
+        const clr_btn = document.createElement('BUTTON');
+        clr_btn.innerText = 'Clear';
+        clr_btn.style.margin = '10px 0px';
+        clr_btn.style.padding = '5px 15px'
+
+        clr_btn.addEventListener('click', () => {
+            clear();
+        })
+        header_div.appendChild(clr_btn);
+
+        //create a dropdown
+        const select = document.createElement('select');
+        const option1 = document.createElement('option');
+        const option2 = document.createElement('option');
+        const option3 = document.createElement('option');
+        option1.innerText = "40x40";
+        option2.innerText = "80x80";
+        option3.innerText = "160x160";
+        select.appendChild(option1);
+        select.appendChild(option2);
+        select.appendChild(option3);
+        select.style.marginLeft = 'auto';
+        select.setAttribute('id', 'reso');
+        header_div.appendChild(select);
+
+        //create an input checkbox
+        const checkbox = document.createElement('INPUT');
+        checkbox.setAttribute('type', 'checkbox');
+        checkbox.setAttribute('id', 'colorize');
+        checkbox.style.marginLeft = 'auto';
+        header_div.appendChild(checkbox);
+
+        const label = document.createElement('LABEL');
+        label.innerText = "Randomize Color";
+        label.setAttribute('for', 'colorize');
+        label.style.fontFamily = "Helvetica, Tahoma, Verdana";
+        label.style.fontSize = 'small';
+        label.style.fontWeight = '700';
+        header_div.appendChild(label);
+
+        //Create a container <div>
+        const container = document.createElement("div");
+        container.setAttribute('id', 'container');
+        //Set dimensions
+        const pad_width = ui_width;
+        container.style.height = pad_width + 'px';
+        container.style.width = pad_width + 'px';
+        container.style.display = 'flex';
+        container.style.flexWrap = 'wrap';
+        container.style.border = 'solid grey 1px';
+        layout_div.appendChild(container);
+        
+        //create inner divs inside container
+        // 960px width, if 40px wide per block = 24blocks per line, 576 total blocks
+
+        draw_pad(); // init on load
+        reso.addEventListener('change', draw_pad);
+
+        function draw_pad(){
+            //remove children if any
+            erase_blocks();
+            let block_width= 20;
+            const reso = document.getElementById('reso')
+            if (reso.value === "40x40"){
+                block_width = 20;
+            } else if (reso.value === "80x80"){
+                block_width = 10;
+            } else if (reso.value === "160x160"){
+                block_width = 5;
+            }
+            total_blocks = (ui_width/block_width) ** 2;
+            // console.log(total_blocks);
+
+            for (let i=1; i<=total_blocks; i++){
+                let block = document.createElement('div');
+                block.style.width = block_width + 'px';
+                block.style.height = block_width + 'px';
+                block.style.backgroundColor = "#ffffff"
+                block.classList.add('block', i);
+                //block.setAttribute('onselect','return false');
+                block.setAttribute('ondragstart','return false');
+                //block.classList.add(i);
+                container.appendChild(block);
+            }
+
+            //attach hover event on each div block "pixels"
+            const pad_area = document.getElementsByClassName('block');
+            for (let block of Array.from(pad_area)){
+                block.addEventListener('mouseover', event => {
+                    if (event.buttons === 1) {
+                        block.style.backgroundColor = ink_color(block);
+                    } else if (event.buttons === 2) { //erase pixels
+                        block.style.backgroundColor = 'white';
+                        block.addEventListener('contextmenu', event => {
+                            event.preventDefault()
+                            return false;
+                        })
+                    }
+                })
+                block.addEventListener('click', event => {
+                    block.style.backgroundColor = ink_color(block);
+                    if (event.buttons === 2) { //erase pixels
+                        block.style.backgroundColor = 'white';
+                        block.addEventListener('contextmenu', event => {
+                            event.preventDefault()
+                            return false;
+                        })
+                    }
+                })
+            }
+
+        }
+
+        function erase_blocks(){
+            const parent = document.getElementById("container")
+            while (parent.firstChild) {
+                parent.firstChild.remove()
+            }
+        }
+
+        // function ink_color(){
+        //     if (colorize.checked) {
+        //         return randomize_color();
+        //     } else {
+        //         return 'black';
+        //     }
+        // }
+
+        //clear area
+        function clear(){
+            const pad_area = document.getElementsByClassName('block');
+            for (let block of Array.from(pad_area)){
+                block.style.backgroundColor = 'white';
+            }
+        }
+
+        function randomize_color(){
+            let red = Math.floor(Math.random()*255);
+            let green = Math.floor(Math.random()*255);
+            let blue = Math.floor(Math.random()*255);
+            return "rgb("+red+","+green+","+blue+')';
+        }
+
+        function ink_color(block){
+            let temp_str = '';
+            let rgb_arr;
+            let red = '0';
+            let green = '0';
+            let blue = '0';
+            const darken_rate = 0.2;
+
+            let block_color = block.style.backgroundColor;
+            //console.log(block_color);
+
+            if (block_color !== "black" && block_color !== "#000000" && block_color !== "rgb(0, 0, 0)" &&
+                 block_color !== undefined && block_color !== null && colorize.checked && block_color !== "#ffffff" 
+                 && block_color !== "white"  && block_color !== "rgb(255, 255, 255)"){
+                //parse current RGB string
+                temp_str = block_color.replace('rgb(','');
+                temp_str = temp_str.replace(')','');
+                rgb_arr = temp_str.split(', ');
+                red = rgb_arr[0];
+                green = rgb_arr[1];
+                blue = rgb_arr[2];
+
+                if (red !== 0){
+                    red = red - Math.floor(red * darken_rate);
+                    if (red<0) red = 0;
+                }
+                if (green !== 0){
+                    green = green - Math.floor(green * darken_rate);
+                    if (green<0) green = 0;
+                }
+                if (blue !== 0){
+                    blue = blue - Math.floor(blue * darken_rate);
+                    if (blue<0) blue = 0;
+                }
+                // console.log(red, green, blue);
+                return "rgb("+red+","+green+","+blue+')';
+            } else if (block_color !== "black" && block_color !== "#000000" && block_color !== "rgb(0, 0, 0)" && colorize.checked) {
+                return randomize_color();
+            } else {
+                return 'black';
+            }
+        }
+
+        const note = document.createElement('div')
+        note.innerText = 'NOTE: To erase, use the right button of your mouse.'
+        note.style.fontFamily = "Helvetica, Tahoma, Verdana";
+        note.style.fontSize = 'small';
+        note.style.fontWeight = '700';
+        note.style.margin = 'auto'
+        note.style.marginTop = '10px';
+        layout_div.appendChild(note);
+
+    </script>
+    
+</body>
+</html>
